@@ -1,0 +1,116 @@
+let table = base.getTable("Quotation");
+let table2 = base.getTable("Invoice Line Items");
+
+let sourceRecord = await input.recordAsync('Select a record to use', table);
+if (!sourceRecord) throw ('No record was selected');
+console.log(sourceRecord.getCellValueAsString("Products Actuals"))
+
+
+
+let myArray = sourceRecord.getCellValueAsString("Products Actuals").split(/\s*(?:,|$)\s*/);
+console.info(myArray)
+
+let myArrays = sourceRecord.getCellValueAsString("Product Qty").split(/\s*(?:,|$)\s*/);
+console.info(myArrays)
+
+let myArrayss = sourceRecord.getCellValueAsString("Unit Cost").split(/\s*(?:,|$)\s*/);
+console.info(myArrayss)
+
+let myArrayssss = []; // Declare an empty array outside the loop
+
+for (let i = 0; i < myArray.length; i++) {
+  let splitValue = sourceRecord.getCellValueAsString("Number of Sections").split(/\s*(?:,|$)\s*/);
+  myArrayssss = myArrayssss.concat(splitValue); // Merge split results into `myArraysss`
+}
+
+console.log(myArrayssss); // Now you get a flat array of strings
+
+
+
+let myArraysss = []; // Declare an empty array outside the loop
+
+for (let i = 0; i < myArray.length; i++) {
+  let splitValue = sourceRecord.getCellValueAsString("RecordID").split(/\s*(?:,|$)\s*/);
+
+  // Convert each split value into an object with the 'id' property
+  splitValue.forEach(value => {
+    myArraysss.push({ id: value.trim() });
+  });
+}
+
+console.log(myArraysss); // Now you get an array of objects suitable for linked records
+
+
+
+if (!myArray) throw ('No record was selected');
+
+let myNewRecords1 = myArray.map( splitNotes => ({
+    fields : {
+        "Products" : splitNotes
+    }
+}
+))
+
+let myNewRecords2 = myArrays.map( splitNotess => ({
+    fields : {
+        "Qty" : parseInt(splitNotess)
+    }
+}))
+
+let myNewRecords3 = myArrayss.map( splitNotesss => ({
+    fields : {
+        "Unit Price" : parseInt(splitNotesss.replace("$", ""))
+    }
+}))
+
+let myNewRecords5 = myArrayssss.map( splitNotesssss => ({
+    fields : {
+        "Number of Sections" : parseInt(splitNotesssss)
+    }
+}))
+
+let myNewRecords4 = myArraysss.map( splitNotessss => ({
+    fields : {
+        "Quotation ID" : [{ id: splitNotessss.id }]
+    }
+}))
+
+let mergedArray = myNewRecords1.map((obj, index) => {
+  return {
+  fields: {
+      ...obj.fields,
+      ...myNewRecords2[index].fields
+    }
+  }
+});
+
+let mergedArray2 = mergedArray.map((obj, index) => {
+ return {
+  fields: {
+      ...obj.fields,
+      ...myNewRecords3[index].fields
+    }
+  }
+});
+
+let mergedArray3 = mergedArray2.map((obj, index) => {
+  return {
+  fields: {
+      ...obj.fields,
+      ...myNewRecords4[index].fields
+    }
+  }
+});
+
+let mergedArray4 = mergedArray3.map((obj, index) => {
+ return {
+  fields: {
+      ...obj.fields,
+      ...myNewRecords5[index].fields
+    }
+  }
+});
+
+console.log(mergedArray4)
+console.log("Creating records 🤪")
+await table2.createRecordsAsync(mergedArray4);
